@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>港九茶餐厅 · 香港菜品研发考察地图 (R&D Map)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        #map { height: 45vh; width: 100%; z-index: 10; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* 底部信息卡片区域滑动 */
+        #info-panel { height: 55vh; overflow-y: auto; background-color: #f8fafc; padding-bottom: 2rem; }
+    </style>
+</head>
+<body class="bg-slate-50 overflow-hidden flex flex-col h-screen">
+
+    <header class="bg-slate-900 text-white p-4 shadow-md z-20">
+        <h1 class="text-xl font-bold tracking-wider">港九 R&D 考察行动</h1>
+        <p class="text-xs text-slate-400 mt-1">香港绝密风味对标与拆解路线</p>
+    </header>
+
+    <div class="bg-white border-b border-slate-200 z-20">
+        <ul id="day-tabs" class="flex overflow-x-auto hide-scrollbar text-sm font-medium text-center">
+            </ul>
+    </div>
+
+    <div id="map" class="shadow-inner"></div>
+
+    <div id="info-panel" class="px-4 py-2 relative shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-20">
+        <h2 id="day-title" class="text-lg font-bold text-slate-800 my-3 sticky top-0 bg-slate-50 py-2 z-10"></h2>
+        <div id="locations-container" class="space-y-4">
+            </div>
+    </div>
+
+<script>
+    // --- 核心数据字典 (包含经纬度、打法、交通) ---
+    const itineraryData = [
+        {
+            day: 1, label: "Day 1", title: "新界西：烧鹅双绝与冰室微创新",
+            locations: [
+                { name: "华嫂冰室 (屏山总店)", lat: 22.4455, lng: 114.0084, type: "早餐", focus: "拆解招牌菠萝包（夹番茄煎蛋牛油），考察通过番茄解腻提升客单价的微创新思路。", transit: "🚇 屯马线【天水围站】，转乘轻铁至【坑尾村站】步行5分钟。" },
+                { name: "天鸿烧鹅 (元朗)", lat: 22.4442, lng: 114.0287, type: "午餐", focus: "【课题A：元朗派】每日佛山直运黑鬃鹅。考察肉质厚度、五香盐/酱柱侯腌料香气，及酸梅酱解腻比例。", transit: "🚇 屯马线【朗屏站】E出口，步行约10分钟。" },
+                { name: "裕记大饭店 (深井)", lat: 22.3664, lng: 114.0611, type: "晚餐", focus: "【课题B：深井派】明炉炭烧技法。评测皮脆度、鹅油保留度及炭香附着表现，对比确定成都店技术路线。", transit: "🚌 荃湾站转乘 96/96M 绿色小巴至【深井村】下车。" }
+            ]
+        },
+        {
+            day: 2, label: "Day 2", title: "九龙西：水吧灵魂与街头镬气",
+            locations: [
+                { name: "金华冰厅 (太子)", lat: 22.3223, lng: 114.1693, type: "早餐", focus: "全港第一脆皮菠萝包。测试酥皮猪黄油比例、起酥工艺，观摩水吧师傅拉茶手法与红茶拼配。", transit: "🚇 荃湾线/观塘线【太子站】B2出口，步行3分钟。" },
+                { name: "新香园 (坚记)", lat: 22.3292, lng: 114.1616, type: "午餐", focus: "驰名蛋牛治（烘底）。研究免治碎牛肉的去筋与腌制手法，测试其与蛋液完美融合的高利润快手打法。", transit: "🚇 荃湾线【深水埗站】C2出口，步行3分钟。" },
+                { name: "爱文生大排档 (深水埗)", lat: 22.3278, lng: 114.1631, type: "晚餐", focus: "极致猛火镬气。试吃黑椒薯仔牛柳粒、豉椒炒蚬，观摩猛火爆炒收汁节奏，反哺门店干炒牛河与铁板菜。", transit: "🚇 荃湾线【深水埗站】A2出口，步行约8分钟至石硖尾街。" }
+            ]
+        },
+        {
+            day: 3, label: "Day 3", title: "港岛西至大坑：肉类处理与滑蛋火候",
+            locations: [
+                { name: "科记咖啡餐厅 (上环)", lat: 22.2858, lng: 114.1485, type: "早餐", focus: "金牌猪扒。考察带骨猪扒的物理松肉手法、特制豉油腌料，研究肉质不干柴且肉香浓郁的秘诀。", transit: "🚇 港岛线【上环站】A2出口，沿荷李活道步行上斜坡。" },
+                { name: "波记烧腊粉面店 (西环)", lat: 22.2863, lng: 114.1365, type: "午餐", focus: "米其林必比登。考察烧鸭烧肉的斩件标准与汁水保留，体验搭配烧腊的纯正“濑粉”清汤底。", transit: "🚇 港岛线【香港大学站】B1出口，步行3分钟。" },
+                { name: "顺兴车仔面茶餐厅 (大坑)", lat: 22.2789, lng: 114.1920, type: "晚餐", focus: "滑蛋三宝饭。考察茶餐厅核心基本功：蛋液中淡奶油/水淀粉的配比，以及出锅前的推蛋火候。", transit: "🚇 港岛线【天后站】A2出口，步行约10分钟进入大坑区。" }
+            ]
+        },
+        {
+            day: 4, label: "Day 4", title: "九龙东：灵魂酱汁与工厦创意食堂",
+            locations: [
+                { name: "联发茶餐厅 (九龙城)", lat: 22.3294, lng: 114.1895, type: "早餐", focus: "评测厚多士的烘烤火候与黄油涂抹方式，测试丝袜奶茶的挂杯度与茶奶比例。", transit: "🚇 屯马线【宋皇台站】B3出口，步行3分钟。" },
+                { name: "海潮食堂 (观塘)", lat: 22.3105, lng: 114.2235, type: "午餐", focus: "工厦创意王者。考察魔鬼多士、葱花蛋治、麻辣捞乌冬。学习如何用极低成本食材做混搭爆款。", transit: "🚇 观塘线【观塘站】B1出口，步行至成业工业大厦地下室。" },
+                { name: "方荣记沙嗲牛肉专家", lat: 22.3308, lng: 114.1882, type: "晚餐", focus: "拆解全港独一档的浓郁沙爹酱。评测花生酱、沙茶、香料的复合比例，旨在衍生沙爹粉丝肥牛煲等爆品。", transit: "🚇 屯马线【宋皇台站】B3出口，步行约5分钟。" }
+            ]
+        },
+        {
+            day: 5, label: "Day 5", title: "港岛东至九龙：汤底精髓与豉油西餐",
+            locations: [
+                { name: "炳记茶档 (大坑)", lat: 22.2785, lng: 114.1925, type: "早餐", focus: "仅存铁皮档运作模式。考察独特黑椒香气的煎猪扒，及煮“出前一丁”的过冷河爽口技术。", transit: "🚇 港岛线【天后站】A2出口，步行约8分钟至大坑施弼街。" },
+                { name: "华姐清汤腩 (天后)", lat: 22.2825, lng: 114.1917, type: "午餐", focus: "清汤牛腩。考察香料包（草果、陈皮等）配比、牛骨汤底清澈度与鲜甜度，改进门店咖喱/柱侯底汤。", transit: "🚇 港岛线【天后站】A2出口，过马路即达电气道。" },
+                { name: "哥登堡餐厅 (土瓜湾)", lat: 22.3162, lng: 114.1878, type: "晚餐", focus: "怀旧豉油西餐。考察铁板餐黑椒汁、洋葱汁调配，及上桌浇汁的视觉听觉呈现。餐后方便前往西九龙返程。", transit: "🚇 屯马线【土瓜湾站】落山道出口，步行3分钟。" }
+            ]
+        }
+    ];
+
+    // --- 初始化地图 ---
+    // 默认视角设在维多利亚港中心
+    const map = L.map('map', { zoomControl: false }).setView([22.3193, 114.1694], 12);
+    
+    // 使用 CartoDB 提供的极简风格瓦片，显得高级、干净
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap & CartoDB'
+    }).addTo(map);
+
+    let currentMarkers = [];
+    let currentPolyline = null;
+
+    // --- 渲染逻辑 ---
+    const tabsContainer = document.getElementById('day-tabs');
+    const dayTitle = document.getElementById('day-title');
+    const locationsContainer = document.getElementById('locations-container');
+
+    // 生成顶部 Tab
+    itineraryData.forEach((data, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex-none mr-2 last:mr-0';
+        li.innerHTML = `
+            <button onclick="selectDay(${index})" 
+                    id="tab-btn-${index}"
+                    class="inline-block p-4 border-b-2 rounded-t-lg transition-colors duration-200 
+                           ${index === 0 ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}">
+                ${data.label}
+            </button>
+        `;
+        tabsContainer.appendChild(li);
+    });
+
+    // 选中某天触发的动作
+    function selectDay(index) {
+        // 1. 更新 Tab 状态
+        itineraryData.forEach((_, i) => {
+            const btn = document.getElementById(`tab-btn-${i}`);
+            if (i === index) {
+                btn.classList.replace('border-transparent', 'border-blue-600');
+                btn.classList.replace('text-gray-600', 'text-blue-600');
+                btn.classList.add('text-blue-600');
+            } else {
+                btn.classList.replace('border-blue-600', 'border-transparent');
+                btn.classList.replace('text-blue-600', 'text-gray-600');
+                btn.classList.remove('text-blue-600');
+            }
+        });
+
+        const dayData = itineraryData[index];
+        dayTitle.innerText = dayData.title;
+
+        // 2. 清理旧地图元素
+        currentMarkers.forEach(m => map.removeLayer(m));
+        if (currentPolyline) map.removeLayer(currentPolyline);
+        currentMarkers = [];
+        locationsContainer.innerHTML = '';
+
+        const latLngs = [];
+
+        // 3. 渲染新数据
+        dayData.locations.forEach((loc, locIdx) => {
+            // 画地图打点
+            const marker = L.marker([loc.lat, loc.lng]).addTo(map);
+            marker.bindPopup(`<b>${loc.name}</b><br>${loc.type}`);
+            currentMarkers.push(marker);
+            latLngs.push([loc.lat, loc.lng]);
+
+            // 渲染列表卡片
+            const card = document.createElement('div');
+            card.className = "bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-3";
+            card.innerHTML = `
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md font-semibold">${loc.type}</span>
+                        ${loc.name}
+                    </h3>
+                </div>
+                <div class="bg-amber-50 rounded-lg p-3 text-sm text-slate-700 border border-amber-100">
+                    <span class="font-bold text-amber-800 block mb-1">👨‍🍳 研发对标重点：</span>
+                    ${loc.focus}
+                </div>
+                <div class="flex items-start gap-2 text-xs text-slate-500 mt-1">
+                    <span>${loc.transit}</span>
+                </div>
+            `;
+            locationsContainer.appendChild(card);
+        });
+
+        // 4. 画连线并让地图自适应缩放
+        if (latLngs.length > 0) {
+            currentPolyline = L.polyline(latLngs, {color: '#2563eb', weight: 3, opacity: 0.7, dashArray: '5, 5'}).addTo(map);
+            map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
+        }
+        
+        // 滚动回顶部
+        document.getElementById('info-panel').scrollTop = 0;
+    }
+
+    // 默认加载 Day 1
+    selectDay(0);
+</script>
+</body>
+</html>
