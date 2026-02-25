@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>港九茶餐厅 · 研发考察工作台 V2.2</title>
+    <title>港九茶餐厅 · 研发考察工作台 V2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +12,7 @@
         #map { height: 40vh; width: 100%; z-index: 10; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        #info-panel { height: 60vh; overflow-y: auto; background-color: #f1f5f9; padding-bottom: 3rem; }
+        #info-panel { height: 60vh; overflow-y: auto; background-color: #f1f5f9; padding-bottom: 5rem; } /* 增加了底部留白给导出按钮 */
         .card-transition { transition: all 0.3s ease; }
         .done-card { opacity: 0.7; filter: grayscale(20%); border-left: 4px solid #10b981 !important; }
     </style>
@@ -24,7 +24,7 @@
             <h1 class="text-xl font-bold tracking-wider">港九 R&D 考察行动</h1>
             <p class="text-xs text-slate-400 mt-1">实地勘测与菜品复刻工作台</p>
         </div>
-        <div class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 font-mono">V 2.2</div>
+        <div class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 font-mono">V 2.3</div>
     </header>
 
     <div class="bg-white border-b border-slate-200 z-20 shadow-sm">
@@ -38,6 +38,13 @@
         <h2 id="day-title" class="text-lg font-bold text-slate-800 my-3 sticky top-0 bg-slate-100/95 backdrop-blur py-2 z-10 rounded"></h2>
         <div id="locations-container" class="space-y-4">
             </div>
+        
+        <div class="mt-8 mb-4 text-center">
+            <button onclick="exportReport()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center justify-center gap-2 mx-auto w-11/12 transition-transform active:scale-95">
+                📤 一键生成并复制汇报 (发微信)
+            </button>
+            <p class="text-xs text-slate-400 mt-2">点击后即可直接去微信群粘贴发送</p>
+        </div>
     </div>
 
 <script>
@@ -162,6 +169,39 @@
         saveLocalData();
     }
 
+    // 【新增功能】一键导出报告到剪贴板
+    window.exportReport = function() {
+        let report = "【港九茶餐厅 - 香港考察研发报告】\n\n";
+        let hasData = false;
+        
+        // 遍历所有保存的数据
+        for (let locName in userNotes) {
+            let data = userNotes[locName];
+            // 只要打卡了、写了笔记、或者打了星，就纳入报告
+            if (data.done || data.note || data.rating > 0) {
+                hasData = true;
+                report += `📍 餐厅：${locName}\n`;
+                report += `✅ 状态：${data.done ? '已打卡' : '未打卡'}\n`;
+                if(data.rating > 0) report += `⭐ 评分：${data.rating} 星\n`;
+                if(data.note) report += `📝 研发笔记：${data.note}\n`;
+                report += `----------------------\n`;
+            }
+        }
+        
+        if (!hasData) {
+            alert("⚠️ 目前还没有任何打卡或笔记记录哦！请先在餐厅卡片上操作。");
+            return;
+        }
+
+        // 调用浏览器剪贴板 API
+        navigator.clipboard.writeText(report).then(() => {
+            alert("✅ 报告已成功排版并复制！\n\n请直接打开微信群聊，在输入框长按点击「粘贴」发送即可。");
+        }).catch(err => {
+            // 兼容部分旧手机的备用提示
+            alert("⚠️ 您的手机浏览器不支持自动复制。请手动截图记录内容。");
+        });
+    }
+
     function selectDay(index) {
         currentDayIndex = index;
         
@@ -206,7 +246,6 @@
                 `<span onclick="setRating('${loc.name}', ${star})" class="cursor-pointer text-2xl ${rating >= star ? 'text-amber-400' : 'text-slate-200'}">★</span>`
             ).join('');
 
-            // 【新增】判断是否有预约提醒
             const reservationHtml = loc.reservation ? `
                 <div class="bg-red-50 text-red-700 text-xs p-2.5 mt-2 mb-2 rounded border border-red-100 font-medium">
                     ${loc.reservation}
@@ -216,7 +255,6 @@
             const card = document.createElement('div');
             card.className = `bg-white p-4 rounded-xl shadow-sm border border-slate-200 card-transition border-l-4 border-l-blue-500 ${isDone ? 'done-card' : ''} ${index === 5 && !isDone ? '!border-l-amber-500' : ''}`;
             
-            // 【重要修复】使用谷歌官方的唤醒导航路径 URL
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div>
