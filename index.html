@@ -148,7 +148,7 @@
             currentMarkers.push(marker);
             latLngs.push([loc.lat, loc.lng]);
 
-            // 渲染列表卡片
+            // 渲染列表卡片（包含谷歌地图唤醒链接）
             const card = document.createElement('div');
             card.className = "bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-3";
             card.innerHTML = `
@@ -162,8 +162,11 @@
                     <span class="font-bold text-amber-800 block mb-1">👨‍🍳 研发对标重点：</span>
                     ${loc.focus}
                 </div>
-                <div class="flex items-start gap-2 text-xs text-slate-500 mt-1">
-                    <span>${loc.transit}</span>
+                <div class="flex items-end justify-between gap-2 mt-2">
+                    <span class="text-xs text-slate-500 flex-1">${loc.transit}</span>
+                    <a href="https://maps.google.com/?q=${loc.lat},${loc.lng}" target="_blank" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded shadow-sm flex items-center">
+                        📍 谷歌导航
+                    </a>
                 </div>
             `;
             locationsContainer.appendChild(card);
