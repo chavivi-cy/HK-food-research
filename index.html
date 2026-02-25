@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>港九茶餐厅 · 研发考察工作台 V2.0</title>
+    <title>港九茶餐厅 · 研发考察工作台 V2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,7 +13,6 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         #info-panel { height: 60vh; overflow-y: auto; background-color: #f1f5f9; padding-bottom: 3rem; }
-        /* 过渡动画 */
         .card-transition { transition: all 0.3s ease; }
         .done-card { opacity: 0.7; filter: grayscale(20%); border-left: 4px solid #10b981 !important; }
     </style>
@@ -25,7 +24,7 @@
             <h1 class="text-xl font-bold tracking-wider">港九 R&D 考察行动</h1>
             <p class="text-xs text-slate-400 mt-1">实地勘测与菜品复刻工作台</p>
         </div>
-        <div class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300">V 2.0</div>
+        <div class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 font-mono">V 2.2</div>
     </header>
 
     <div class="bg-white border-b border-slate-200 z-20 shadow-sm">
@@ -42,7 +41,7 @@
     </div>
 
 <script>
-    // --- 本地存储数据初始化 (自动保存在手机浏览器) ---
+    // --- 本地存储数据初始化 ---
     const STORAGE_KEY = 'hk_rd_map_data';
     let userNotes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
@@ -50,7 +49,7 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(userNotes));
     }
 
-    // --- 核心数据字典 (新增备选高星餐厅) ---
+    // --- 核心数据字典 ---
     const itineraryData = [
         {
             day: 1, label: "Day 1", title: "新界西：烧鹅双绝与冰室微创新",
@@ -93,11 +92,26 @@
             ]
         },
         {
-            day: 6, label: "🌟 备选", title: "高预算与极致出品参考库 (视预算取舍)",
+            day: 6, label: "🌟 备选", title: "高预算与极致出品参考库 (强烈建议预约)",
             locations: [
-                { name: "锋膳 (Kin's Kitchen)", lat: 22.2774, lng: 114.1738, tags: ["高端粤菜", "神级烧腊"], focus: "极品蜜汁叉烧与高阶粤菜处理。考察高端食材如何在传统手法下提升溢价，作为门店VIP包间或高端单品的研发标杆。", transit: "🚇 【湾仔站】A3出口，步行约5分钟。" },
-                { name: "卅二公馆 (Mott 32)", lat: 22.2806, lng: 114.1594, tags: ["黑毛猪叉烧", "极致装潢"], focus: "考察其闻名全球的“极品蜜汁黑毛猪叉烧”，体验其将传统烧味做成国际化奢侈品的切割摆盘与环境氛围。", transit: "🚇 【中环站】K出口，渣打银行大厦地库。" },
-                { name: "大班楼 (The Chairman)", lat: 22.2845, lng: 114.1534, tags: ["亚洲第一", "顶级本味"], focus: "不加味精的极致本味提取。重点考察其独创酱汁（如鸡油花雕、蟹汁）的提鲜逻辑，极大拓宽厨师的调味视野。", transit: "🚇 【中环站】D2出口，威灵顿街。" }
+                { 
+                    name: "锋膳 (Kin's Kitchen)", lat: 22.2774, lng: 114.1738, tags: ["高端粤菜", "神级烧腊"], 
+                    focus: "极品蜜汁叉烧与高阶粤菜处理。考察高端食材如何在传统手法下提升溢价，作为门店VIP包间或高端单品的研发标杆。", 
+                    reservation: "📞 预约提示：建议至少提前 1-2 周致电 +852 2571 0913 订座，特色招牌菜需在电话中提前确认预留。",
+                    transit: "🚇 【湾仔站】A3出口，步行约5分钟。" 
+                },
+                { 
+                    name: "卅二公馆 (Mott 32)", lat: 22.2806, lng: 114.1594, tags: ["黑毛猪叉烧", "极致装潢"], 
+                    focus: "考察其闻名全球的“极品蜜汁黑毛猪叉烧”，体验其将传统烧味做成国际化奢侈品的切割摆盘与环境氛围。", 
+                    reservation: "⚠️ 必看提示：需提前1个月官网预订。极品蜜汁黑毛猪叉烧【每天限量】，必须在订座时同时留言预留，否则现场点不到！",
+                    transit: "🚇 【中环站】K出口，渣打银行大厦地库。" 
+                },
+                { 
+                    name: "大班楼 (The Chairman)", lat: 22.2845, lng: 114.1534, tags: ["亚洲第一", "顶级本味"], 
+                    focus: "不加味精的极致本味提取。重点考察其独创酱汁（如鸡油花雕、蟹汁）的提鲜逻辑，极大拓宽厨师的调味视野。", 
+                    reservation: "🔥 极难预订：亚洲第一，通常需提前2-3个月通过官网排期，或致电 +852 2555 2202 碰运气捡漏。",
+                    transit: "🚇 【中环站】D2出口，威灵顿街。" 
+                }
             ]
         }
     ];
@@ -116,7 +130,6 @@
         itineraryData.forEach((data, index) => {
             const li = document.createElement('li');
             li.className = 'flex-none mr-1 last:mr-0';
-            // 特殊样式给备选库
             const isPremium = index === 5;
             li.innerHTML = `
                 <button onclick="selectDay(${index})" id="tab-btn-${index}"
@@ -129,15 +142,13 @@
         });
     }
 
-    // 更新星星渲染
     window.setRating = function(locName, rating) {
         if(!userNotes[locName]) userNotes[locName] = {};
         userNotes[locName].rating = rating;
         saveLocalData();
-        selectDay(currentDayIndex); // 重新渲染刷新星星
+        selectDay(currentDayIndex); 
     }
 
-    // 更新打卡状态
     window.toggleDone = function(locName) {
         if(!userNotes[locName]) userNotes[locName] = {};
         userNotes[locName].done = !userNotes[locName].done;
@@ -145,7 +156,6 @@
         selectDay(currentDayIndex); 
     }
 
-    // 更新笔记
     window.updateNote = function(locName, text) {
         if(!userNotes[locName]) userNotes[locName] = {};
         userNotes[locName].note = text;
@@ -155,22 +165,22 @@
     function selectDay(index) {
         currentDayIndex = index;
         
-        // 更新 Tab 高亮
+        // 更新 Tab 颜色
         itineraryData.forEach((_, i) => {
             const btn = document.getElementById(`tab-btn-${i}`);
             if (i === index) {
-                btn.style.borderColor = i === 5 ? '#d97706' : '#2563eb'; // 备选用金色
+                btn.style.borderColor = i === 5 ? '#d97706' : '#2563eb'; 
                 btn.style.color = i === 5 ? '#d97706' : '#2563eb';
             } else {
                 btn.style.borderColor = 'transparent';
-                btn.style.color = i === 5 ? '#92400e' : '#64748b'; // 未选中状态
+                btn.style.color = i === 5 ? '#92400e' : '#64748b'; 
             }
         });
 
         const dayData = itineraryData[index];
         document.getElementById('day-title').innerHTML = dayData.title;
 
-        // 清理地图
+        // 清理旧地图
         currentMarkers.forEach(m => map.removeLayer(m));
         if (currentPolyline) map.removeLayer(currentPolyline);
         currentMarkers = [];
@@ -178,28 +188,35 @@
         locationsContainer.innerHTML = '';
         const latLngs = [];
 
-        // 渲染卡片
+        // 渲染新卡片
         dayData.locations.forEach(loc => {
             const state = userNotes[loc.name] || { done: false, rating: 0, note: '' };
             const isDone = state.done;
             const rating = state.rating;
 
-            // 地图打点
-            const markerColor = isDone ? 'gray' : (index === 5 ? 'orange' : 'blue');
+            // 打点
             const marker = L.marker([loc.lat, loc.lng]).addTo(map);
             marker.bindPopup(`<b>${loc.name}</b>`);
             currentMarkers.push(marker);
             latLngs.push([loc.lat, loc.lng]);
 
-            // 卡片 HTML
+            // 卡片元素组合
             const tagsHtml = loc.tags.map(t => `<span class="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-1.5 py-0.5 rounded">${t}</span>`).join('');
             const starsHtml = [1,2,3,4,5].map(star => 
                 `<span onclick="setRating('${loc.name}', ${star})" class="cursor-pointer text-2xl ${rating >= star ? 'text-amber-400' : 'text-slate-200'}">★</span>`
             ).join('');
 
+            // 【新增】判断是否有预约提醒
+            const reservationHtml = loc.reservation ? `
+                <div class="bg-red-50 text-red-700 text-xs p-2.5 mt-2 mb-2 rounded border border-red-100 font-medium">
+                    ${loc.reservation}
+                </div>
+            ` : '';
+
             const card = document.createElement('div');
             card.className = `bg-white p-4 rounded-xl shadow-sm border border-slate-200 card-transition border-l-4 border-l-blue-500 ${isDone ? 'done-card' : ''} ${index === 5 && !isDone ? '!border-l-amber-500' : ''}`;
             
+            // 【重要修复】使用谷歌官方的唤醒导航路径 URL
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -213,10 +230,12 @@
                     </button>
                 </div>
 
-                <div class="bg-amber-50 rounded p-2.5 text-sm text-slate-700 border border-amber-100 my-3">
+                <div class="bg-amber-50 rounded p-2.5 text-sm text-slate-700 border border-amber-100 mt-3 mb-2">
                     <span class="font-bold text-amber-800 block text-xs mb-1">👨‍🍳 研发对标要求：</span>
                     ${loc.focus}
                 </div>
+
+                ${reservationHtml}
 
                 <div class="border-t border-slate-100 pt-3 mt-3">
                     <div class="flex justify-between items-center mb-2">
@@ -228,14 +247,14 @@
 
                 <div class="flex justify-between items-end gap-2 mt-3 pt-2">
                     <span class="text-[11px] text-slate-400 leading-tight flex-1">📍 ${loc.transit}</span>
-<a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" class="shrink-0 bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded flex items-center shadow-sm">                        🗺️ 导航
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" class="shrink-0 bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded flex items-center shadow-sm">
+                        🗺️ 导航
                     </a>
                 </div>
             `;
             locationsContainer.appendChild(card);
         });
 
-        // 绘制连线 (备选库不需要连线)
         if (latLngs.length > 0) {
             if (index !== 5) {
                 currentPolyline = L.polyline(latLngs, {color: '#3b82f6', weight: 3, opacity: 0.6, dashArray: '5, 5'}).addTo(map);
@@ -245,7 +264,6 @@
         document.getElementById('info-panel').scrollTop = 0;
     }
 
-    // 初始化并加载 Day 1
     initTabs();
     selectDay(0);
 </script>
